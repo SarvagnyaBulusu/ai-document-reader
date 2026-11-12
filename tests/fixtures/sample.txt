@@ -1,0 +1,1 @@
+Linux basic commands: ls lists files, cd changes directory, pwd prints the working directory, mkdir creates folders, rm removes files and cp copies them.

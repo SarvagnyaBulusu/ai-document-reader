@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Document Reader</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <div class="logo-icon">📄</div>
+          <span>DocReader</span>
+        </div>
+        <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+      </div>
+
+      <!-- Analytics -->
+      <div class="sidebar-section">
+        <p class="sidebar-label">ANALYTICS</p>
+        <div class="analytics-grid">
+          <div class="analytics-card">
+            <div class="analytics-value" id="total-docs">0</div>
+            <div class="analytics-label">Total Docs</div>
+          </div>
+          <div class="analytics-card">
+            <div class="analytics-value" id="avg-words">0</div>
+            <div class="analytics-label">Avg Words</div>
+          </div>
+        </div>
+        <div id="top-topics-box"></div>
+        <button class="insights-btn" onclick="openInsights()">📊 View Insights</button>
+      </div>
+
+      <!-- History -->
+      <div class="sidebar-section">
+        <p class="sidebar-label">HISTORY</p>
+        <input type="text" id="search-input" placeholder="Search documents..." oninput="searchHistory(this.value)">
+        <button class="clear-all-btn" onclick="clearAllHistory()">🗑 Clear All History</button>
+        <div id="history-list">
+          <p class="no-history">No documents yet</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main -->
+    <div class="main">
+      <div class="header">
+        <div>
+          <h1>AI Document Reader</h1>
+          <p>Upload any document and get an instant AI-powered summary</p>
+        </div>
+        <div class="header-badge">Powered by Groq AI + MongoDB</div>
+      </div>
+
+      <!-- Upload Section -->
+      <div id="upload-section">
+        <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+          <div class="upload-icon">⬆</div>
+          <h3>Drop your document here</h3>
+          <p>or click to browse files</p>
+          <div class="file-types">
+            <span>PDF</span><span>TXT</span><span>DOC</span><span>DOCX</span><span>PPT</span><span>PPTX</span><span>MD</span>
+          </div>
+        </div>
+        <input type="file" id="file-input" accept="*/*" onchange="handleFile(this.files[0])">
+
+        <div class="divider"><span>or paste text</span></div>
+        <textarea id="text-input" placeholder="Paste your document text here..."></textarea>
+
+        <div id="file-preview" class="file-preview" style="display:none">
+          <div class="file-icon" id="file-ext">TXT</div>
+          <div class="file-info">
+            <p id="file-name">document.txt</p>
+            <p id="file-size">0 KB</p>
+          </div>
+          <button onclick="removeFile()">✕</button>
+        </div>
+
+        <p class="section-label">SUMMARY STYLE</p>
+        <div class="options-grid">
+          <div class="option selected" onclick="selectOption(this,'concise')">
+            <h4>Concise</h4>
+            <p>Short overview of all topics</p>
+          </div>
+          <div class="option" onclick="selectOption(this,'detailed')">
+            <h4>Detailed</h4>
+            <p>Deep explanation of everything</p>
+          </div>
+          <div class="option" onclick="selectOption(this,'bullets')">
+            <h4>Key Points</h4>
+            <p>Every item as a bullet point</p>
+          </div>
+          <div class="option" onclick="selectOption(this,'academic')">
+            <h4>Academic</h4>
+            <p>Formal research-style summary</p>
+          </div>
+        </div>
+
+        <button class="analyze-btn" onclick="analyze()">🔍 Analyze Document</button>
+      </div>
+
+      <!-- Loading -->
+      <div id="loading-section" style="display:none">
+        <div class="loading-card">
+          <div class="spinner"></div>
+          <h3>Analyzing your document...</h3>
+          <p>AI is reading and summarizing your content</p>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div id="results-section" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- Style Picker Modal -->
+  <div id="style-modal" style="display:none">
+    <div class="modal-overlay" onclick="closeStyleModal()"></div>
+    <div class="modal-box">
+      <h3>Choose Summary Style</h3>
+      <p>Select a style to re-analyze the same document</p>
+      <div class="modal-options">
+        <div class="modal-option" onclick="changeStyle('concise')">
+          <h4>Concise</h4>
+          <p>Short 4-5 sentence overview</p>
+        </div>
+        <div class="modal-option" onclick="changeStyle('detailed')">
+          <h4>Detailed</h4>
+          <p>Deep explanation of everything</p>
+        </div>
+        <div class="modal-option" onclick="changeStyle('bullets')">
+          <h4>Key Points</h4>
+          <p>Every item as a bullet point</p>
+        </div>
+        <div class="modal-option" onclick="changeStyle('academic')">
+          <h4>Academic</h4>
+          <p>Formal research-style summary</p>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeStyleModal()">Cancel</button>
+    </div>
+  </div>
+
+
+  <!-- Insights Modal -->
+  <div id="insights-modal" style="display:none">
+    <div class="modal-overlay" onclick="closeInsights()"></div>
+    <div class="modal-box insights-box">
+      <h3>Insights</h3>
+      <p id="insights-sub">Built from your saved documents using MongoDB aggregation</p>
+      <div id="insights-body"></div>
+      <div class="insights-actions">
+        <button class="export-btn" onclick="exportCSV()">⬇ Download CSV</button>
+        <button class="modal-close" onclick="closeInsights()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
